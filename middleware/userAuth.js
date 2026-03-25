@@ -19,12 +19,20 @@ export async function userAuth(ctx, next) {
 
   // Если нет ID пользователя, отправляем сообщение об ошибке
   if (!userId) {
+    // Отвечаем на callback запрос, чтобы убрать индикатор загрузки
+    if (ctx.callbackQuery) {
+      await ctx.answerCallbackQuery({ text: "❌ Не удалось определить ID пользователя.", show_alert: false });
+    }
     await ctx.reply("❌ Не удалось определить ID пользователя.");
     return;
   }
 
   // Проверка доступа
   if (!allowedTelegramIds.includes(userId.toString())) {
+    // Отвечаем на callback запрос, чтобы убрать индикатор загрузки
+    if (ctx.callbackQuery) {
+      await ctx.answerCallbackQuery({ text: "❌ У вас нет прав для выполнения этого действия.", show_alert: false });
+    }
     await ctx.reply("❌ У вас нет прав для выполнения этого действия.");
     return;
   }
