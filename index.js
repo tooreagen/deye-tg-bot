@@ -1,6 +1,11 @@
 import "dotenv/config";
 import { Bot } from "grammy";
-import { getDeyeAccessToken } from "./api/getDeyeAccessToken.js";
+import {
+  initTokenManager,
+  getAccessToken,
+  getLastRefreshTime,
+  hasToken,
+} from "./api/tokenManager.js";
 import { userAuth } from "./middleware/userAuth.js";
 
 const {
@@ -12,6 +17,16 @@ const {
   DEYE_PASSWORD,
   DEYE_IDENTITY_TYPE,
 } = process.env;
+
+// Инициализация менеджера токенов
+initTokenManager({
+  baseUrl: DEYE_BASE_URL,
+  appId: DEYE_APP_ID,
+  appSecret: DEYE_APP_SECRET,
+  identity: DEYE_EMAIL,
+  password: DEYE_PASSWORD,
+  identityType: DEYE_IDENTITY_TYPE || "email",
+});
 
 // Инициализация бота с токеном из переменных окружения
 const bot = new Bot(BOT_TOKEN);
@@ -30,25 +45,29 @@ bot.command("start", async (ctx) => {
 // Обработка нажатия на кнопку (с middleware авторизации)
 bot.callbackQuery("get_token", userAuth, async (ctx) => {
   try {
-    await ctx.answerCallbackQuery("⏳ Запрос токена...");
-    await ctx.reply("⏳ Получаю токен...");
+    if (!hasToken()) {
+      await ctx.answerCallbackQuery("⚠️ Токен не инициализирован");
+      await ctx.reply("❌ Токен еще не получен. Пожалуйста, подождите...");
+      return;
+    }
 
-    const result = await getDeyeAccessToken({
-      baseUrl: DEYE_BASE_URL,
-      appId: DEYE_APP_ID,
-      appSecret: DEYE_APP_SECRET,
-      identity: DEYE_EMAIL,
-      password: DEYE_PASSWORD,
-      identityType: DEYE_IDENTITY_TYPE || "email",
-    });
+    const accessToken = getAccessToken();
+    const lastRefresh = getLastRefreshTime();
+    const timeSinceRefresh = lastRefresh
+      ? Math.floor((new Date() - lastRefresh) / 1000 / 60) // минуты
+      : 0;
+
+    await ctx.answerCallbackQuery("✅ Токен получен");
 
     const message = `
-✅ Токен успешно получен!
+✅ Текущий access token:
 
-🔑 Access Token: ${result.accessToken}
+🔑 Access Token: ${accessToken}
 
-⏰ Истекает через: ${Math.floor(result.expiresIn / 60)} минут
-${result.refreshToken ? `🔄 Refresh Token: ${result.refreshToken}` : ""}
+📅 Последнее обновление: ${lastRefresh ? lastRefresh.toLocaleString("ru-RU") : "Неизвестно"}
+⏰ Прошло времени: ${timeSinceRefresh} минут
+
+🔄 Токен обновляется автоматически каждые 30 дней (1-го числа месяца в 00:00)
     `.trim();
 
     await ctx.reply(message);
