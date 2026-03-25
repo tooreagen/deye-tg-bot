@@ -1,7 +1,7 @@
 import "dotenv/config";
 import { Bot } from "grammy";
 import {
-  initTokenManager,
+  initTokenManagerAndRefresh,
   getAccessToken,
   getLastRefreshTime,
   hasToken,
@@ -18,70 +18,75 @@ const {
   DEYE_IDENTITY_TYPE,
 } = process.env;
 
-// Инициализация менеджера токенов
-initTokenManager({
-  baseUrl: DEYE_BASE_URL,
-  appId: DEYE_APP_ID,
-  appSecret: DEYE_APP_SECRET,
-  identity: DEYE_EMAIL,
-  password: DEYE_PASSWORD,
-  identityType: DEYE_IDENTITY_TYPE || "email",
-});
-
-// Инициализация бота с токеном из переменных окружения
 const bot = new Bot(BOT_TOKEN);
 
-// Обработка команды /start с кнопкой
 bot.command("start", async (ctx) => {
   const keyboard = {
-    inline_keyboard: [[{ text: "🔑 Получить токен", callback_data: "get_token" }]],
+    inline_keyboard: [
+      [
+        { text: "Get token", callback_data: "get_token" },
+      ],
+    ],
   };
 
-  await ctx.reply("Привет! Я Telegram бот для работы с DeyeCloud API.", {
+  await ctx.reply("Telegram bot for DeyeCloud API.", {
     reply_markup: keyboard,
   });
 });
 
-// Обработка нажатия на кнопку (с middleware авторизации)
 bot.callbackQuery("get_token", userAuth, async (ctx) => {
   try {
     if (!hasToken()) {
-      await ctx.answerCallbackQuery("⚠️ Токен не инициализирован");
-      await ctx.reply("❌ Токен еще не получен. Пожалуйста, подождите...");
+      await ctx.answerCallbackQuery("Token is not initialized");
+      await ctx.reply("Token is not available yet. Please wait.");
       return;
     }
 
     const accessToken = getAccessToken();
     const lastRefresh = getLastRefreshTime();
     const timeSinceRefresh = lastRefresh
-      ? Math.floor((new Date() - lastRefresh) / 1000 / 60) // минуты
+      ? Math.floor((new Date() - lastRefresh) / 1000 / 60)
       : 0;
 
-    await ctx.answerCallbackQuery("✅ Токен получен");
+    await ctx.answerCallbackQuery("Token received");
 
     const message = `
-✅ Текущий access token:
+Current access token:
 
-🔑 Access Token: ${accessToken}
+Access Token: ${accessToken}
 
-📅 Последнее обновление: ${lastRefresh ? lastRefresh.toLocaleString("ru-RU") : "Неизвестно"}
-⏰ Прошло времени: ${timeSinceRefresh} минут
+Last refresh: ${lastRefresh ? lastRefresh.toLocaleString("ru-RU") : "Unknown"}
+Minutes since refresh: ${timeSinceRefresh}
 
-🔄 Токен обновляется автоматически каждые 30 дней (1-го числа месяца в 00:00)
+Token is refreshed automatically every 30 days (day 1 at 00:00)
     `.trim();
 
     await ctx.reply(message);
   } catch (error) {
-    console.error("Ошибка получения токена:", error.message);
-    await ctx.reply(`❌ Ошибка получения токена: ${error.message}`);
+    console.error("Token retrieval error:", error.message);
+    await ctx.reply(`Token retrieval error: ${error.message}`);
   }
 });
 
-// Обработка ошибок
 bot.catch((err) => {
-  console.error("Ошибка бота:", err);
+  console.error("Bot error:", err);
 });
 
-// Запуск бота
-bot.start();
-console.log("Бот запущен!");
+async function startBot() {
+  await initTokenManagerAndRefresh({
+    baseUrl: DEYE_BASE_URL,
+    appId: DEYE_APP_ID,
+    appSecret: DEYE_APP_SECRET,
+    identity: DEYE_EMAIL,
+    password: DEYE_PASSWORD,
+    identityType: DEYE_IDENTITY_TYPE || "email",
+  });
+
+  bot.start();
+  console.log("Bot started");
+}
+
+startBot().catch((error) => {
+  console.error("Bot startup error:", error.message);
+  process.exit(1);
+});

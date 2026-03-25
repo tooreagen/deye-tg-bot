@@ -28,16 +28,15 @@ let tokenConfig = null;
  */
 export function initTokenManager(config) {
   tokenConfig = config;
-  
-  // Получаем токен при старте
-  refreshToken();
-  
+
   // Настраиваем cron на обновление каждые 30 дней в 00:00
   cron.schedule("0 0 0 1 * *", () => {
     console.log("🔄 Автоматическое обновление токена...");
-    refreshToken();
+    refreshToken().catch((error) => {
+      console.error("❌ Ошибка автоматического обновления токена:", error.message);
+    });
   });
-  
+
   console.log("✅ Менеджер токенов инициализирован. Токен будет обновляться каждые 30 дней.");
 }
 
@@ -45,6 +44,10 @@ export function initTokenManager(config) {
  * Получение нового токена
  */
 async function refreshToken() {
+  if (!tokenConfig) {
+    throw new Error("Token manager не инициализирован.");
+  }
+
   try {
     console.log("⏳ Получение access token...");
     
@@ -88,4 +91,14 @@ export function hasToken() {
  */
 export function getLastRefreshTime() {
   return lastRefreshTime;
+}
+
+/**
+ * Инициализировать менеджер токенов и сразу получить первый token
+ * @param {Object} config
+ * @returns {Promise<Object>}
+ */
+export async function initTokenManagerAndRefresh(config) {
+  initTokenManager(config);
+  return refreshToken();
 }
