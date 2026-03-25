@@ -1,4 +1,4 @@
-require("dotenv").config();
+import "dotenv/config";
 
 /**
  * Middleware для проверки авторизации пользователя по Telegram ID
@@ -14,7 +14,7 @@ const allowedTelegramIds = ALLOWED_TELEGRAM_IDS
   ? ALLOWED_TELEGRAM_IDS.split(",").map((id) => id.trim())
   : [];
 
-async function userAuth(ctx, next) {
+export async function userAuth(ctx, next) {
   const userId = ctx.from?.id;
 
   // Если нет ID пользователя, отправляем сообщение об ошибке
@@ -32,5 +32,3 @@ async function userAuth(ctx, next) {
   // Если пользователь авторизован, передаем управление дальше
   await next();
 }
-
-module.exports = { userAuth };

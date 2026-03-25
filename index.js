@@ -1,8 +1,7 @@
-require("dotenv").config();
-const { Bot } = require("grammy");
-const axios = require("axios");
-const { getDeyeAccessToken } = require("./api/getDeyeAccessToken");
-const { userAuth } = require("./middleware/userAuth");
+import "dotenv/config";
+import { Bot } from "grammy";
+import { getDeyeAccessToken } from "./api/getDeyeAccessToken.js";
+import { userAuth } from "./middleware/userAuth.js";
 
 const {
   BOT_TOKEN,

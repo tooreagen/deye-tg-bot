@@ -1,5 +1,5 @@
-const axios = require("axios");
-const crypto = require("crypto");
+import axios from "axios";
+import crypto from "node:crypto";
 
 /**
  * Получение access token для DeyeCloud API
