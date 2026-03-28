@@ -22,18 +22,22 @@ export async function getStationList(config = {}) {
   const url = `${config.baseUrl}/v1.0/station/list`;
 
   try {
-    console.log(accessToken);
 
-    const response = await axios.post(url, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
-      },
-      params: {
-        pageNo,
-        pageSize,
-      },
-    });
+    const response = await axios.post(
+      url,
+      {}, // пустое тело запроса
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        params: {
+          pageNo,
+          pageSize,
+        },
+      }
+    );
+console.log(response.data);
 
     const data = response.data;
 
