@@ -37,7 +37,6 @@ export async function getStationList(config = {}) {
         },
       }
     );
-console.log(response.data);
 
     const data = response.data;
 
