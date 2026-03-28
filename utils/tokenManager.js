@@ -1,5 +1,5 @@
 import cron from "node-cron";
-import { getDeyeAccessToken } from "./getDeyeAccessToken.js";
+import { getDeyeAccessToken } from "../api/getDeyeAccessToken.js";
 
 /**
  * Модуль для управления access token
@@ -50,15 +50,15 @@ async function refreshToken() {
 
   try {
     console.log("⏳ Получение access token...");
-    
+
     const result = await getDeyeAccessToken(tokenConfig);
-    
+
     currentAccessToken = result.accessToken;
     lastRefreshTime = new Date();
-    
+
     console.log("✅ Access token успешно получен и сохранен");
     console.log(`⏰ Истекает через: ${Math.floor(result.expiresIn / 60)} минут`);
-    
+
     return result;
   } catch (error) {
     console.error("❌ Ошибка получения токена:", error.message);
