@@ -1,8 +1,9 @@
 import fs from "fs";
 import path from "path";
 
-const INFO_LOG_PATH = path.resolve(process.cwd(), "info.log");
-const ERROR_LOG_PATH = path.resolve(process.cwd(), "error.log");
+const LOG_DIR_PATH = path.resolve(process.cwd(), "log");
+const INFO_LOG_PATH = path.join(LOG_DIR_PATH, "info.log");
+const ERROR_LOG_PATH = path.join(LOG_DIR_PATH, "error.log");
 
 function formatTimestamp(date = new Date()) {
   const pad = (value) => String(value).padStart(2, "0");
@@ -37,15 +38,20 @@ function serializePart(part) {
 async function writeLog(filePath, level, parts) {
   try {
     const absoluteFilePath = path.resolve(process.cwd(), filePath);
-    const logDir = path.dirname(absoluteFilePath);
-
-    await fs.promises.mkdir(logDir, { recursive: true });
+    await fs.promises.mkdir(LOG_DIR_PATH, { recursive: true });
 
     const currentDate = formatTimestamp();
     const message = parts.map(serializePart).join(" ");
     const line = `${currentDate} [${level.toUpperCase()}] ${message}\n`;
 
     await fs.promises.appendFile(absoluteFilePath, line, "utf8");
+
+    if (level === "error") {
+      process.stderr.write(line);
+      return;
+    }
+
+    process.stdout.write(line);
   } catch (error) {
     process.stderr.write(`Logging error: ${serializePart(error)}\n`);
   }
