@@ -2,13 +2,10 @@ import "dotenv/config";
 import { Bot } from "grammy";
 import {
   initTokenManagerAndRefresh,
-  getAccessToken,
-  getLastRefreshTime,
-  hasToken,
 } from "./utils/tokenManager.js";
-import { userAuth } from "./middleware/userAuth.js";
 import { registerStationHandlers } from "./handlers/stationHandlers.js";
 import { createApiServer } from "./apiServer.js";
+import { logger } from "./helpers/loggingSystem.js";
 
 const {
   BOT_TOKEN,
@@ -29,10 +26,7 @@ registerStationHandlers(bot, DEYE_BASE_URL);
 bot.command("start", async (ctx) => {
   const keyboard = {
     inline_keyboard: [
-      [
-        { text: "Get token", callback_data: "get_token" },
-        { text: "Get stations", callback_data: "get_stations" },
-      ],
+      [{ text: "Get stations", callback_data: "get_stations" }],
     ],
   };
 
@@ -41,40 +35,8 @@ bot.command("start", async (ctx) => {
   });
 });
 
-bot.callbackQuery("get_token", userAuth, async (ctx) => {
-  try {
-    if (!hasToken()) {
-      await ctx.answerCallbackQuery("Token is not initialized");
-      await ctx.reply("Token is not available yet. Please wait.");
-      return;
-    }
-
-    const accessToken = getAccessToken();
-    const lastRefresh = getLastRefreshTime();
-    const timeSinceRefresh = lastRefresh ? Math.floor((new Date() - lastRefresh) / 1000 / 60) : 0;
-
-    await ctx.answerCallbackQuery("Token received");
-
-    const message = `
-Current access token:
-
-Access Token: ${accessToken}
-
-Last refresh: ${lastRefresh ? lastRefresh.toLocaleString("ru-RU") : "Unknown"}
-Minutes since refresh: ${timeSinceRefresh}
-
-Token is refreshed automatically every 30 days (day 1 at 00:00)
-    `.trim();
-
-    await ctx.reply(message);
-  } catch (error) {
-    console.error("Token retrieval error:", error.message);
-    await ctx.reply(`Token retrieval error: ${error.message}`);
-  }
-});
-
 bot.catch((err) => {
-  console.error("Bot error:", err);
+  logger.error("Bot error:", err);
 });
 
 async function startBot() {
@@ -94,10 +56,10 @@ async function startBot() {
 
   apiServer.start();
   bot.start();
-  console.log("Bot started");
+  await logger.info("Bot started");
 }
 
 startBot().catch((error) => {
-  console.error("Bot startup error:", error.message);
+  logger.error("Bot startup error:", error.message);
   process.exit(1);
 });

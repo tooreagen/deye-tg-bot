@@ -1,5 +1,6 @@
 import axios from "axios";
 import crypto from "node:crypto";
+import { logger } from "../helpers/loggingSystem.js";
 
 /**
  * Получение access token для DeyeCloud API
@@ -62,11 +63,11 @@ export async function getDeyeAccessToken(config) {
 
     return {
       accessToken: data.accessToken,
-      expiresIn: parseInt(data.expiresIn, 10), // в секундах (обычно 5183999)
-      refreshToken: data.refreshToken, // если присутствует
+      expiresIn: parseInt(data.expiresIn, 10),
+      refreshToken: data.refreshToken,
     };
   } catch (error) {
-    console.error("Ошибка запроса токена:", error.response?.data || error.message);
+    await logger.error("Ошибка запроса токена:", error.response?.data || error.message);
     throw error;
   }
 }

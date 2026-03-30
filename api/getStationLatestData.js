@@ -1,5 +1,6 @@
 import axios from "axios";
 import { getAccessToken } from "../utils/tokenManager.js";
+import { logger } from "../helpers/loggingSystem.js";
 
 /**
  * Получение последних данных станции DeyeCloud
@@ -59,7 +60,7 @@ export async function getStationLatestData(config = {}) {
       lastUpdateTime: data.lastUpdateTime,
     };
   } catch (error) {
-    console.error("Ошибка запроса данных станции:", error.response?.data || error.message);
+    await logger.error("Ошибка запроса данных станции:", error.response?.data || error.message);
     throw error;
   }
 }

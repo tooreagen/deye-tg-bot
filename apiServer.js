@@ -1,5 +1,6 @@
 import express from "express";
 import { getStationLatestData } from "./api/getStationLatestData.js";
+import { logger } from "./helpers/loggingSystem.js";
 
 const DEFAULT_API_PORT = 3000;
 
@@ -43,7 +44,7 @@ export function createApiServer({ baseUrl, port = DEFAULT_API_PORT } = {}) {
         irradiateIntensity: toNumberOrZero(latestData.irradiateIntensity),
       });
     } catch (error) {
-      console.error("API server error:", error.response?.data || error.message);
+      await logger.error("API server error:", error.response?.data || error.message);
       res.status(500).json({
         msg: error.message || "internal server error",
       });
@@ -58,7 +59,7 @@ export function createApiServer({ baseUrl, port = DEFAULT_API_PORT } = {}) {
     app,
     start() {
       return app.listen(port, () => {
-        console.log(`API server started on port ${port}`);
+        logger.info(`API server started on port ${port}`);
       });
     },
   };

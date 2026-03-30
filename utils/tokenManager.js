@@ -1,5 +1,6 @@
 import cron from "node-cron";
 import { getDeyeAccessToken } from "../api/getDeyeAccessToken.js";
+import { logger } from "../helpers/loggingSystem.js";
 
 /**
  * Модуль для управления access token
@@ -7,6 +8,7 @@ import { getDeyeAccessToken } from "../api/getDeyeAccessToken.js";
  */
 
 // Хранение текущего токена
+
 let currentAccessToken = null;
 let lastRefreshTime = null;
 
@@ -31,13 +33,13 @@ export function initTokenManager(config) {
 
   // Настраиваем cron на обновление каждые 30 дней в 00:00
   cron.schedule("0 0 0 1 * *", () => {
-    console.log("🔄 Автоматическое обновление токена...");
+    logger.info("Автоматическое обновление токена...");
     refreshToken().catch((error) => {
-      console.error("❌ Ошибка автоматического обновления токена:", error.message);
+      logger.error("Ошибка автоматического обновления токена:", error.message);
     });
   });
 
-  console.log("✅ Менеджер токенов инициализирован. Токен будет обновляться каждые 30 дней.");
+  logger.info("Менеджер токенов инициализирован. Токен будет обновляться каждые 30 дней.");
 }
 
 /**
@@ -49,19 +51,19 @@ async function refreshToken() {
   }
 
   try {
-    console.log("⏳ Получение access token...");
+    await logger.info("Получение access token...");
 
     const result = await getDeyeAccessToken(tokenConfig);
 
     currentAccessToken = result.accessToken;
     lastRefreshTime = new Date();
 
-    console.log("✅ Access token успешно получен и сохранен");
-    console.log(`⏰ Истекает через: ${Math.floor(result.expiresIn / 60)} минут`);
+    await logger.info("Access token успешно получен и сохранен");
+    await logger.info(`Истекает через: ${Math.floor(result.expiresIn / 60)} минут`);
 
     return result;
   } catch (error) {
-    console.error("❌ Ошибка получения токена:", error.message);
+    await logger.error("Ошибка получения токена:", error.message);
     throw error;
   }
 }
@@ -72,7 +74,7 @@ async function refreshToken() {
  */
 export function getAccessToken() {
   if (!currentAccessToken) {
-    console.warn("⚠️ Access token не инициализирован. Вызовите initTokenManager() сначала.");
+    logger.warn("Access token не инициализирован. Вызовите initTokenManager() сначала.");
   }
   return currentAccessToken;
 }

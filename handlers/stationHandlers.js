@@ -1,6 +1,7 @@
 import { getStationList } from "../api/getStationList.js";
 import { getStationLatestData } from "../api/getStationLatestData.js";
 import { userAuth } from "../middleware/userAuth.js";
+import { logger } from "../helpers/loggingSystem.js";
 
 // Хранилище для данных станций (в памяти)
 const stationsCache = new Map();
@@ -77,7 +78,7 @@ function createStationsKeyboard(stations, currentPage, totalPages) {
 }
 
 // Функция для отображения страницы со станциями
-async function showStationsPage(ctx, page, baseUrl) {
+async function showStationsPage(ctx, page) {
   const allStations = stationsCache.get("stations") || [];
   const total = stationsCache.get("total") || 0;
 
@@ -110,7 +111,7 @@ export function registerStationHandlers(bot, baseUrl) {
 
       // Загружаем все станции
       const result = await getStationList({
-        baseUrl: baseUrl,
+        baseUrl,
         pageNo: 1,
         pageSize: 1000, // Загружаем все сразу для кеширования
       });
@@ -125,29 +126,29 @@ export function registerStationHandlers(bot, baseUrl) {
       stationsCache.set("total", result.total);
 
       // Показываем первую страницу
-      await showStationsPage(ctx, 1, baseUrl);
+      await showStationsPage(ctx, 1);
     } catch (error) {
-      console.error("Station list retrieval error:", error.message);
+      await logger.error("Station list retrieval error:", error.message);
       await ctx.editMessageText(`❌ Ошибка получения списка станций: ${error.message}`);
     }
   });
 
   // Обработчик для пагинации станций
   bot.callbackQuery(/^stations_page_(\d+)$/, userAuth, async (ctx) => {
-    const page = parseInt(ctx.match[1]);
-    await showStationsPage(ctx, page, baseUrl);
+    const page = Number.parseInt(ctx.match[1], 10);
+    await showStationsPage(ctx, page);
   });
 
   // Обработчик для деталей станции
   bot.callbackQuery(/^station_details_(\d+)$/, userAuth, async (ctx) => {
-    const stationId = parseInt(ctx.match[1]);
+    const stationId = Number.parseInt(ctx.match[1], 10);
 
     try {
       await ctx.answerCallbackQuery("Loading station details...");
       await ctx.editMessageText("⏳ Загрузка данных станции...");
 
       const allStations = stationsCache.get("stations") || [];
-      const station = allStations.find((s) => s.id === stationId);
+      const station = allStations.find((item) => item.id === stationId);
 
       if (!station) {
         await ctx.editMessageText("❌ Станция не найдена");
@@ -155,8 +156,8 @@ export function registerStationHandlers(bot, baseUrl) {
       }
 
       const latestData = await getStationLatestData({
-        baseUrl: baseUrl,
-        stationId: stationId,
+        baseUrl,
+        stationId,
       });
 
       const statusEmoji =
@@ -206,7 +207,7 @@ ${statusEmoji} Статус: ${station.connectionStatus}
         reply_markup: keyboard,
       });
     } catch (error) {
-      console.error("Station details error:", error.message);
+      await logger.error("Station details error:", error.message);
       await ctx.editMessageText(`❌ Ошибка получения данных станции: ${error.message}`);
     }
   });

@@ -1,5 +1,6 @@
 import axios from "axios";
 import { getAccessToken } from "../utils/tokenManager.js";
+import { logger } from "../helpers/loggingSystem.js";
 
 /**
  * Получение списка станций DeyeCloud
@@ -22,10 +23,9 @@ export async function getStationList(config = {}) {
   const url = `${config.baseUrl}/v1.0/station/list`;
 
   try {
-
     const response = await axios.post(
       url,
-      {}, // пустое тело запроса
+      {},
       {
         headers: {
           Authorization: `Bearer ${accessToken}`,
@@ -35,7 +35,7 @@ export async function getStationList(config = {}) {
           pageNo,
           pageSize,
         },
-      }
+      },
     );
 
     const data = response.data;
@@ -53,7 +53,7 @@ export async function getStationList(config = {}) {
       stationList: data.stationList || [],
     };
   } catch (error) {
-    console.error("Ошибка запроса списка станций:", error.response?.data || error.message);
+    await logger.error("Ошибка запроса списка станций:", error.response?.data || error.message);
     throw error;
   }
 }
